@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rozpočty staveb — Rozpočtář v ČR (mosty, železnice, pozemní)</title>
+<meta name="description" content="Rozpočty, audit a optimalizace nákladů v ČR: KROS/RTS/ÚRS, OTSKP, TOV. Nabídka do 24 h. Mosty, železnice, pozemní stavby.">
+<meta name="theme-color" content="#e9efe7">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Rozpočty staveb — Rozpočtář v ČR">
+<meta property="og:description" content="Profesionální rozpočty, audit a T-O-V asistent. Nabídka do 24 h.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="cs_CZ">
+
+<!-- Favicon (inline SVG) -->
+<link rel="icon" href='data:image/svg+xml;utf8,
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<rect width="64" height="64" rx="12" ry="12" fill="%23dfeee6"/>
+<path d="M14 44 L32 20 L50 44" stroke="%231c3b2b" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="32" cy="34" r="3" fill="%231c3b2b"/>
+</svg>'>
+
+<style>
+  :root{
+    --bg:#f3f6f4; --bg2:#eef4f0;
+    --card:#ffffff; --ink:#1c2b23; --muted:#5f6f66;
+    --brand:#2a8b6f; --brand-2:#7cb39f; --line:#e1e8e3;
+    --shadow:0 10px 30px rgba(28,43,35,.08); --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,var(--bg), var(--bg2));
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .container{max-width:1080px;margin:0 auto;padding:0 20px}
+  header{
+    position:sticky;top:0;z-index:20;
+    backdrop-filter:saturate(120%) blur(8px);
+    background:color-mix(in srgb, var(--bg) 70%, white);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{display:flex;align-items:center;gap:12px;font-weight:800}
+  .logo svg{width:28px;height:28px}
+  .nav-links{display:flex;gap:14px;align-items:center}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+       padding:12px 16px;border-radius:12px;border:0;background:var(--brand);color:#fff;font-weight:700;cursor:pointer;
+       box-shadow:var(--shadow);transition:transform .15s ease}
+  .btn:hover{transform:translateY(-1px)}
+  .btn.secondary{background:#e9efe7;color:#1c2b2b}
+  /* HERO */
+  .hero{padding:60px 0 28px}
+  .hero .wrap{display:grid;grid-template-columns:1.2fr .8fr;gap:28px;align-items:center}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#e9efe7;color:#2a5b48;font-weight:700;border:1px solid var(--line)}
+  h1{font-size:40px;line-height:1.15;margin:16px 0 10px;letter-spacing:.2px}
+  .lead{font-size:18px;color:var(--muted);max-width:64ch}
+  /* CARDS / GRID */
+  section{padding:48px 0}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .card h3{margin:.2rem 0 .3rem}
+  .muted{color:var(--muted)}
+  .kpis{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+  .pill{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fbfdfb;font-weight:700}
+  /* STEPS */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .step .n{width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;display:inline-grid;place-items:center;font-weight:800;margin-bottom:8px}
+  /* PRICING */
+  .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .price{border:2px solid var(--line)}
+  .price .tag{display:inline-block;margin-bottom:8px;padding:4px 10px;border-radius:999px;background:#e9efe7;border:1px solid var(--line);font-weight:700}
+  .price h4{margin:.2rem 0}
+  .price .num{font-size:28px;font-weight:900}
+  .price ul{padding-left:18px}
+  /* FOOTER */
+  footer{padding:28px 0 48px;border-top:1px solid var(--line);color:var(--muted)}
+  .footgrid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:18px}
+  /* REVEAL */
+  .reveal{opacity:0;transform:translateY(12px);transition:opacity .5s ease, transform .5s ease}
+  .reveal.in{opacity:1;transform:none}
+  /* RESPONSIVE */
+  @media (max-width:900px){
+    .hero .wrap{grid-template-columns:1fr}
+    .grid-3{grid-template-columns:1fr}
+    .steps{grid-template-columns:1fr 1fr}
+    .pricing{grid-template-columns:1fr}
+    .footgrid{grid-template-columns:1fr}
+    h1{font-size:32px}
+  }
+  /* TOV BOT */
+  #tov-fab{position:fixed;right:18px;bottom:18px;border:0;border-radius:999px;padding:12px 16px;background:var(--brand);color:#fff;font-weight:800;box-shadow:0 10px 30px rgba(0,0,0,.12);cursor:pointer;z-index:9999}
+  #tov-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999}
+  #tov-card{width:min(940px,96vw);max-height:92vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.2);padding:16px}
+  #tov-grid{display:grid;grid-template-columns:280px 1fr;gap:14px}
+  #tov-list{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fbfdfb}
+  #tov-list button{width:100%;text-align:left;border:0;background:transparent;padding:8px;border-radius:8px;cursor:pointer}
+  #tov-list button:hover{background:#eef4f0}
+  .tov-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:center}
+  .tov-row input{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px}
+  .uploader{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .uploader input[type=file]{border:1px dashed var(--brand-2);padding:8px;border-radius:10px;background:#f8fbf9}
+</style>
+</head>
+<body>
+<header>
+  <div class="container nav">
+    <div class="logo">
+      <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0%" stop-color="#2a8b6f"/><stop offset="100%" stop-color="#7cb39f"/></linearGradient></defs>
+        <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#g)"/>
+        <path d="M16 40 L32 22 L48 40" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <circle cx="32" cy="32" r="3" fill="#fff"/>
+      </svg>
+      <span>Rozpočty staveb</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#sluzby">Služby</a>
+      <a href="#cenik">Ceník</a>
+      <a href="#proc-ja">Proč já</a>
+      <a href="#kontakt" class="btn">Získat nabídku</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container wrap">
+      <div class="reveal">
+        <span class="badge">Rozpočtář · KROS · RTS/ÚRS · OTSKP</span>
+        <h1>Rozpočty, audit a T-O-V — mosty, železnice, pozemní stavby</h1>
+        <p class="lead">Přesné rozpočty, audit a optimalizace nákladů. KROS 4, RTS/ÚRS, převody OTSKP. Nabídka do 24 h. Reálné sazby práce a strojů (např. dvoucestný bagr), rozpad T-O-V pro obhajobu v soutěži i realizaci.</p>
+        <div class="kpis">
+          <div class="pill">Nabídka do 24 h</div>
+          <div class="pill">Audit rozpočtu od 4 990 Kč</div>
+          <div class="pill">Export: XLSX / PDF / KROS</div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <a href="#kontakt" class="btn">Poptejte kalkulaci</a>
+          <button class="btn secondary" id="open-tov">T-O-V bot</button>
+        </div>
+      </div>
+
+      <div class="card reveal">
+        <form class="form" id="lead" action="https://formspree.io/f/your-form-id" method="POST">
+          <h3 style="margin:0">Rychlá poptávka</h3>
+          <div class="field" style="display:grid;gap:6px">
+            <label for="name">Jméno / firma</label>
+            <input id="name" name="name" required placeholder="Vaše jméno nebo název firmy">
+          </div>
+          <div class="field" style="display:grid;gap:6px">
+            <label for="email">E-mail</label>
+            <input id="email" type="email" name="email" required placeholder="vas@email.cz">
+          </div>
+          <div class="field" style="display:grid;gap:6px">
+            <label for="type">Typ zakázky</label>
+            <select id="type" name="type">
+              <option>Most / inženýrská stavba</option>
+              <option>Železniční stavba</option>
+              <option>Pozemní stavba</option>
+              <option>Jiné / kombinace</option>
+            </select>
+          </div>
+          <div class="field" style="display:grid;gap:6px">
+            <label for="msg">Stručný popis (rozsah, termín, podklady)</label>
+            <textarea id="msg" name="message" placeholder="OTSKP/VV, termín soutěže, specifika (např. dvoucestný bagr)…" style="min-height:120px"></textarea>
+          </div>
+          <input type="hidden" name="_subject" value="Nová poptávka — Rozpočty staveb">
+          <button class="btn" type="submit">Odeslat poptávku</button>
+          <small class="muted">Odesláním souhlasíte se zpracováním údajů pouze pro účely nabídky.</small>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="sluzby">
+    <div class="container">
+      <h2 class="reveal">Služby</h2>
+      <div class="grid-3">
+        <div class="card reveal">
+          <h3>Rozpočty & nabídky</h3>
+          <p class="muted">Kompletní rozpočet v KROS/RTS s členěním T-O-V, kalkulace mezd a strojů, převod do OTSKP.</p>
+          <ul>
+            <li>Výkaz výměr / kontrola VV</li>
+            <li>Varianty A/B (technologie, materiály)</li>
+            <li>Export: XLSX, PDF, KROS</li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <h3>Audit & optimalizace</h3>
+          <p class="muted">Nezávislá kontrola směrných norem, sazeb, strojů a rizik. Porovnání s trhem, nalezení chyb a duplicit.</p>
+          <ul>
+            <li>Reálné hodinové sazby</li>
+            <li>Stroje (dvoucestný bagr apod.)</li>
+            <li>Doporučení úspor</li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <h3>Konzultace & podpora</h3>
+          <p class="muted">Podpora v soutěžích, dotazy k položkám, vysvětlení předpokladů a smluvních podmínek (FIDIC, zádržné).</p>
+          <ul>
+            <li>Q&A k rozpočtu</li>
+            <li>Příprava podkladů</li>
+            <li>Report pro management</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card reveal" style="margin-top:18px">
+        <strong>Specializace:</strong> mosty, železniční těleso, PHS, drenáže, gabiony, interiéry (pozemní stavby), MEP koordinace.
+      </div>
+    </div>
+  </section>
+
+  <section id="cenik">
+    <div class="container">
+      <h2 class="reveal">Ceník (freemium → pro)</h2>
+      <div class="pricing">
+        <div class="card price reveal">
+          <span class="tag">Free</span>
+          <h4>Freemium</h4>
+          <div class="num">0 Kč</div>
+          <ul class="muted">
+            <li>Vyhledání T-O-V podle názvu</li>
+            <li>Rychlý výpočet 1–2 položek</li>
+            <li>Základní TKP check (pár bodů)</li>
+          </ul>
+        </div>
+        <div class="card price reveal" style="border-color:#2a8b6f">
+          <span class="tag">Doporučeno</span>
+          <h4>Pro</h4>
+          <div class="num">990 Kč / měs.</div>
+          <ul class="muted">
+            <li>Import BOQ (XLSX/CSV)</li>
+            <li>Plný výpočet T-O-V a export</li>
+            <li>Vlastní sazby firmy + koeficienty</li>
+            <li>Rozšířený TKP check</li>
+          </ul>
+        </div>
+        <div class="card price reveal">
+          <span class="tag">Expert</span>
+          <h4>Expert</h4>
+          <div class="num">1 990 Kč / měs.</div>
+          <ul class="muted">
+            <li>Vše z Pro</li>
+            <li>5 expertních konzultací / měs.</li>
+            <li>Prioritní podpora</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="proc-ja">
+    <div class="container">
+      <h2 class="reveal">Proč spolupracovat se mnou</h2>
+      <div class="steps">
+        <div class="step reveal"><div class="n">1</div><strong>Přesnost</strong><br><span class="muted">Detailní T-O-V dle PD a praxe.</span></div>
+        <div class="step reveal"><div class="n">2</div><strong>Rychlost</strong><br><span class="muted">První nabídka obvykle do 24 h.</span></div>
+        <div class="step reveal"><div class="n">3</div><strong>Transparentnost</strong><br><span class="muted">Jasné předpoklady a rizika.</span></div>
+        <div class="step reveal"><div class="n">4</div><strong>Formáty</strong><br><span class="muted">KROS 4, RTS/ÚRS, OTSKP, XLSX/PDF.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="card reveal">
+        <h3>Krátké představení</h3>
+        <p class="muted">Rozpočtář s praxí v inženýrském i pozemním stavitelství. Zkušenosti s mosty a železnicí, včetně přepočtů položek bez úplného T-O-V. Opírám se o data z minulých zakázek, aktuální ceny a strojní kapacity. Cílem je spolehlivá nabídka, kterou lze obhájit v soutěži i při realizaci.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- (Volitelně) Reference – doplníte později -->
+
+  <section id="kontakt">
+    <div class="container">
+      <h2 class="reveal">Kontakt</h2>
+      <div class="grid-3">
+        <div class="card reveal">
+          <h3>Rychlý e-mail</h3>
+          <p class="muted">Pošlete stručný popis a termín. Odpovím s návrhem postupu a cenou.</p>
+          <p><strong>E-mail:</strong> <a href="mailto:alpro1000@gmail.com">alpro1000@gmail.com</a><br>
+             <strong>Telefon:</strong> <a href="tel:+420000000000">+420 000 000 000</a></p>
+          <p><strong>Sídlo:</strong> Plzeň / celá ČR</p>
+        </div>
+        <div class="card reveal">
+          <h3>Co potřebuji k nabídce</h3>
+          <ul class="muted">
+            <li>Projektová dokumentace / VV</li>
+            <li>Termín soutěže / realizace</li>
+            <li>Požadovaný formát (KROS/RTS/XLSX)</li>
+            <li>Specifika (stroje, materiály, normy)</li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <h3>GDPR & fakturace</h3>
+          <p class="muted">Údaje používám výhradně pro zpracování nabídky a plnění smlouvy. Fakturace s DPH možná.</p>
+        </div>
+      </div>
+      <div class="card reveal" style="margin-top:18px">
+        <strong>Tip:</strong> Zadejte „<em>Audit</em>“ a přiložte PDF rozpočtu/TZ — ozvu se s fixní cenou.
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container footgrid">
+    <div>
+      <div class="logo" style="margin-bottom:6px">
+        <svg viewBox="0 0 64 64" width="22" height="22" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="14" fill="#2a8b6f"/><path d="M16 40 L32 22 L48 40" stroke="#fff" stroke-width="4" fill="none"/></svg>
+        <span>Rozpočty staveb</span>
+      </div>
+      <div class="muted">© <span id="y"></span> Rozpočty staveb. Všechna práva vyhrazena.</div>
+    </div>
+    <div>
+      <strong>Odkazy</strong><br>
+      <a href="#sluzby">Služby</a><br>
+      <a href="#cenik">Ceník</a><br>
+      <a href="#kontakt">Kontakt</a>
+    </div>
+    <div>
+      <strong>Dokumenty</strong><br>
+      <a href="#" onclick="alert('Přidejte odkaz na PDF CV');return false;">CV (PDF)</a><br>
+      <a href="#" onclick="alert('Přidejte odkaz na VOP');return false;">Obchodní podmínky</a>
+    </div>
+  </div>
+</footer>
+
+<!-- === TOV BOT: FLOAT BUTTON + MODAL === -->
+<button id="tov-fab" title="T-O-V bot">T-O-V bot</button>
+<div id="tov-modal" role="dialog" aria-modal="true" aria-labelledby="tov-title">
+  <div id="tov-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 id="tov-title" style="margin:0">T-O-V asistent (beta)</h3>
+      <button class="btn secondary" id="tov-close" aria-label="Zavřít T-O-V bot">Zavřít</button>
+    </div>
+    <div id="tov-grid">
+      <div>
+        <div class="muted" style="font-size:13px;margin-bottom:6px">Zvolte šablonu práce</div>
+        <div id="tov-list"></div>
+        <div class="uploader">
+          <input type="file" id="tov-json" accept=".json" title="Načíst vaše normy (JSON)">
+          <button class="btn secondary" id="tov-add">+ Vytvořit vlastní</button>
+        </div>
+        <div style="margin-top:10px" class="muted" id="tov-note"></div>
+      </div>
+      <div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <span class="pill">Mzda (Kč/h): <input id="rateLabor" type="number" value="366" style="width:90px;margin-left:6px"></span>
+          <span class="pill">Režie %: <input id="overhead" type="number" value="10" style="width:70px;margin-left:6px"></span>
+          <span class="pill">Zisk %: <input id="margin" type="number" value="8" style="width:70px;margin-left:6px"></span>
+        </div>
+        <div id="tov-content"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="tov-calc">Přepočítat</button>
+          <button class="btn secondary" id="tov-csv">Export CSV</button>
+        </div>
+        <div id="tov-result" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Rok ve footeru
+  document.getElementById('y').textContent = new Date().getFullYear();
+
+  // Měkké zobrazení bloků při scrollu
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }});
+  },{threshold:.1});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // Lead form: fallback na mailto pokud Formspree není nastaven
+  document.getElementById('lead').addEventListener('submit', function(e){
+    if(this.action.includes('your-form-id')){
+      e.preventDefault();
+      const name = encodeURIComponent(this.name.value||'');
+      const email = encodeURIComponent(this.email.value||'');
+      const type = encodeURIComponent(this.type.value||'');
+      const msg  = encodeURIComponent(this.message.value||'');
+      const body = `Jméno/Firma: ${name}%0AEmail: ${email}%0ATyp zakázky: ${type}%0APopis:%0A${msg}`;
+      window.location.href = `mailto:alpro1000@gmail.com?subject=Nová poptávka — Rozpočty staveb&body=${body}`;
+    }
+  });
+
+  // === TOV BOT (bez serveru) ===
+  const TOV_RULES = [
+    {
+      id: "rail_ballast_replacement",
+      name: "Železnice — výměna štěrku (příklad)",
+      qtyUnit: "m³",
+      defaults: {
+        labor_h_per_unit: 0.75,
+        machines: [
+          { name: "Dvoucestný bagr", rate: 2600, h_per_unit: 0.40 },
+          { name: "Nakladač", rate: 1200, h_per_unit: 0.25 }
+        ],
+        materials: [
+          { name: "Štěrk frakce", unit: "t", qty_per_unit: 1.05, price: 0 }
+        ]
+      },
+      notes: "Upravit dle PD a nasazení strojů; množství materiálu podle VV."
+    },
+    {
+      id: "bridge_formwork_wall",
+      name: "Most — bednění stěny (příklad)",
+      qtyUnit: "m² bednění",
+      defaults: {
+        labor_h_per_unit: 0.20,
+        machines: [{ name: "Autojeřáb 25 t", rate: 1800, h_per_unit: 0.05 }],
+        materials: [{ name: "Bednicí desky opotř.", unit: "m²", qty_per_unit: 1.00, price: 0 }]
+      },
+      notes: "Zohlednit systém a kvalitu povrchu (TKP-18)."
+    }
+  ];
+  let currentRule = null;
+  const $ = s=>document.querySelector(s);
+
+  // Ovládání modalu
+  const openModal=()=>{$("#tov-modal").style.display="flex"};
+  const closeModal=()=>{$("#tov-modal").style.display="none"};
+  $("#tov-fab").onclick = openModal;
+  $("#open-tov").onclick = openModal;
+  $("#tov-close").onclick = closeModal;
+
+  // UI list
+  const list = $("#tov-list"), content=$("#tov-content"), result=$("#tov-result"), note=$("#tov-note");
+  function renderList(){ list.innerHTML=""; TOV_RULES.forEach(r=>{ const b=document.createElement("button"); b.textContent=r.name; b.onclick=()=>selectRule(r.id); list.appendChild(b);}); }
+  function selectRule(id){ currentRule=TOV_RULES.find(r=>r.id===id); if(!currentRule) return; note.textContent=currentRule.notes||""; renderRuleEditor(currentRule); result.innerHTML=""; }
+
+  function renderRuleEditor(rule){
+    const d = rule.defaults;
+    content.innerHTML = `
+      <div class="tov-row" style="margin-bottom:6px">
+        <div><strong>Výstupní množství (Q)</strong></div>
+        <div><input id="qty" type="number" step="0.01" value="100"></div>
+        <div><strong>Jedn.</strong></div>
+        <div>${rule.qtyUnit}</div>
+      </div>
+      <h4>Práce (T)</h4>
+      <div class="tov-row">
+        <div>Hodin na 1 ${rule.qtyUnit}</div>
+        <div><input id="laborH" type="number" step="0.01" value="${d.labor_h_per_unit}"></div>
+        <div>Mzda (Kč/h)</div>
+        <div><input id="rateLaborInline" type="number" value="${$("#rateLabor").value}"></div>
+      </div>
+      <h4>Mechanizace (O)</h4>
+      <div id="mach"></div>
+      <h4>Materiál (V)</h4>
+      <div id="mat"></div>
+    `;
+    const mach=$("#mach"); mach.innerHTML="";
+    d.machines.forEach((m,i)=>{
+      const row=document.createElement("div"); row.className="tov-row";
+      row.innerHTML = `
+        <div>${m.name}</div>
+        <div><input data-m="h" data-i="${i}" type="number" step="0.01" value="${m.h_per_unit}"></div>
+        <div>Kč/h</div>
+        <div><input data-m="r" data-i="${i}" type="number" step="1" value="${m.rate}"></div>
+      `;
+      mach.appendChild(row);
+    });
+    const mat=$("#mat"); mat.innerHTML="";
+    d.materials.forEach((m,i)=>{
+      const row=document.createElement("div"); row.className="tov-row";
+      row.innerHTML = `
+        <div>${m.name} (${m.unit}/1 ${rule.qtyUnit})</div>
+        <div><input data-t="q" data-i="${i}" type="number" step="0.01" value="${m.qty_per_unit}"></div>
+        <div>Cena/1 ${m.unit}</div>
+        <div><input data-t="p" data-i="${i}" type="number" step="1" value="${m.price}"></div>
+      `;
+      mat.appendChild(row);
+    });
+  }
+
+  function calc(){
+    if(!currentRule) return;
+    const Q = parseFloat($("#qty").value||"0");
+    const labor_h_per_unit = parseFloat($("#laborH").value||"0");
+    const rateLabor = parseFloat($("#rateLaborInline").value||$("#rateLabor").value||"0");
+    // stroje
+    const machRows = Array.from(document.querySelectorAll("#mach input")); const machines={};
+    machRows.forEach(inp=>{ const i=inp.dataset.i; machines[i]=machines[i]||{}; if(inp.dataset.m==="h") machines[i].h=parseFloat(inp.value||"0"); if(inp.dataset.m==="r") machines[i].r=parseFloat(inp.value||"0");});
+    // materiály
+    const matRows = Array.from(document.querySelectorAll("#mat input")); const materials={};
+    matRows.forEach(inp=>{ const i=inp.dataset.i; materials[i]=materials[i]||{}; if(inp.dataset.t==="q") materials[i].q=parseFloat(inp.value||"0"); if(inp.dataset.t==="p") materials[i].p=parseFloat(inp.value||"0");});
+    // výpočty
+    const T_hours = labor_h_per_unit * Q; const T_cost = T_hours * rateLabor;
+    let O_cost=0; Object.values(machines).forEach(m=>{ O_cost += (m.h * Q) * m.r;});
+    let V_cost=0; Object.values(materials).forEach(m=>{ V_cost += (m.q * Q) * m.p;});
+    const overhead = parseFloat($("#overhead").value||"0")/100; const margin = parseFloat($("#margin").value||"0")/100;
+    const base = T_cost + O_cost + V_cost; const withOvh = base * (1+overhead); const withProfit = withOvh * (1+margin);
+    result.innerHTML = `
+      <div class="tov-row" style="margin-top:6px">
+        <div><strong>T (práce):</strong> ${T_hours.toFixed(2)} h · ${T_cost.toLocaleString("cs-CZ")} Kč</div>
+        <div><strong>O (stroje):</strong> ${O_cost.toLocaleString("cs-CZ")} Kč</div>
+        <div><strong>V (materiál):</strong> ${V_cost.toLocaleString("cs-CZ")} Kč</div>
+        <div></div>
+      </div>
+      <div style="margin-top:8px"><strong>Mezisoučet:</strong> ${base.toLocaleString("cs-CZ")} Kč</div>
+      <div><strong>+ Režie:</strong> ${($("#overhead").value)} % → ${(withOvh-base).toLocaleString("cs-CZ")} Kč</div>
+      <div><strong>+ Zisk:</strong> ${($("#margin").value)} % → ${(withProfit-withOvh).toLocaleString("cs-CZ")} Kč</div>
+      <div style="margin-top:6px;font-size:18px"><strong>Celkem:</strong> ${withProfit.toLocaleString("cs-CZ")} Kč</div>
+    `;
+  }
+  function exportCSV(){
+    if(!currentRule) return;
+    const rows=[]; const cells=arr=>arr.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",");
+    rows.push(cells(["Položka", currentRule.name]));
+    rows.push(cells(["Jednotka", currentRule.qtyUnit]));
+    rows.push(cells(["Mzda (Kč/h)", $("#rateLabor").value, "Režie %", $("#overhead").value, "Zisk %", $("#margin").value]));
+    rows.push(cells(["Viz součet na stránce"]));
+    const blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8"}); const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="tov_export.csv"; a.click(); URL.revokeObjectURL(url);
+  }
+  $("#tov-calc").onclick=calc; $("#tov-csv").onclick=exportCSV;
+
+  // Načtení vlastního JSON s normami (bez serveru)
+  $("#tov-json").addEventListener("change", async (e)=>{
+    const f=e.target.files?.[0]; if(!f) return;
+    try{
+      const txt = await f.text();
+      const data = JSON.parse(txt);
+      if(Array.isArray(data)){
+        // očekáváme pole objektů s id, name, qtyUnit, defaults...
+        TOV_RULES.push(...data);
+        renderList();
+        alert("Normy načteny: " + data.length + " položek");
+      }else{
+        alert("Soubor neobsahuje pole položek.");
+      }
+    }catch(err){ alert("Nelze načíst JSON: " + err.message); }
+  });
+
+  function init(){ renderList(); selectRule(TOV_RULES[0].id); }
+  init();
+
+  // Přístupnost: zavření modalu ESC
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+</script>
+
+<!-- Strukturovaná data -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"ProfessionalService",
+  "name":"Rozpočty staveb",
+  "description":"Rozpočty, audit a optimalizace nákladů (KROS, RTS/ÚRS, OTSKP) pro mosty, železnice a pozemní stavby v ČR.",
+  "areaServed":"CZ",
+  "email":"alpro1000@gmail.com",
+  "telephone":"+420000000000",
+  "url":"https://example.cz",
+  "address":{"@type":"PostalAddress","addressLocality":"Plzeň","addressCountry":"CZ"},
+  "sameAs":[]
+}
+</script>
+</body>
+</html>
