@@ -76,7 +76,7 @@ def compute_stats(df: pd.DataFrame) -> Dict[str, Any]:
 
     # Equity drawdown based on equity_after_trade column
     if "equity_after_trade" in df:
-        equity = df["equity_after_trade"].fillna(method="ffill")
+        equity = df["equity_after_trade"].ffill()  # Fixed: removed deprecated method parameter
         peak = equity.cummax()
         denom = peak.replace(0, pd.NA)
         drawdowns = (equity - peak) / denom
