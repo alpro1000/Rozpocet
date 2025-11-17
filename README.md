@@ -31,12 +31,36 @@ See [IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md) for detailed roadmap and fut
 
 Refer to each source file for detailed implementation notes.
 
-## News calendar input
+## Analytics usage and tests
 
-- The Expert Advisor can now load high-impact events from either the MT5 Economic Calendar or a CSV/JSON file located under `MQL5/Files`.
-- Configure the source via inputs:
-  - `NewsCalendarSource` – `"file"` (default) or `"mt5"`
-  - `NewsCalendarFilePath` – filename for on-disk calendars (e.g., `news_calendar.csv`)
-  - `NewsBlockMinutesBefore/After` – symmetric buffers applied around each event
-- File format (CSV example): `datetime,currency,impact,title` where `impact` accepts `high|medium|low`. See `experts/news_calendar_sample.csv` for a template.
-- When an event blocks trading, the EA logs the event name, currency, time, and configured buffer for clearer backtests.
+The Python analytics utility can be run directly from the repository root against a trade log CSV:
+
+```
+python scripts/analyze_trades.py MQL5/Files/eurusd_trades_log.csv
+```
+
+It prints a concise summary, for example:
+
+```
+EURUSD Trend Breakout – Trade Summary
+Total trades: 120
+Win rate: 48.33 %
+Total profit (money): 354.20
+Total profit (R): 36.50
+Average R (winners): 1.35
+Average R (losers): -0.42
+Max consecutive losses: 3
+Max equity drawdown: -6.20 %
+```
+
+Run the accompanying tests to validate the analytics helpers:
+
+```
+./scripts/run_tests.sh
+```
+
+or simply:
+
+```
+make test
+```

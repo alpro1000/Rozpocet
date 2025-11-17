@@ -1,5 +1,29 @@
 #!/usr/bin/env python3
-"""Trade log analytics for the EURUSD Trend Breakout EA."""
+"""Trade log analytics for the EURUSD Trend Breakout EA.
+
+Usage
+-----
+Run directly from the repository root:
+
+```
+python scripts/analyze_trades.py MQL5/Files/eurusd_trades_log.csv
+```
+
+Example output:
+
+```
+EURUSD Trend Breakout – Trade Summary
+==================================================
+Total trades: 120
+Win rate: 48.33 %
+Total profit (money): 354.20
+Total profit (R): 36.50
+Average R (winners): 1.35
+Average R (losers): -0.42
+Max consecutive losses: 3
+Max equity drawdown: -6.20 %
+```
+"""
 from __future__ import annotations
 
 import argparse
