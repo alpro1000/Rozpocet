@@ -30,3 +30,38 @@ See [IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md) for detailed roadmap and fut
 5. **Trade Handling** – Break-even promotion at 1R, trailing stop on local swings, and comprehensive CSV logging for downstream analytics.
 
 Refer to each source file for detailed implementation notes.
+
+## Analytics usage and tests
+
+The Python analytics utility can be run directly from the repository root against a trade log CSV:
+
+```
+python scripts/analyze_trades.py MQL5/Files/eurusd_trades_log.csv
+```
+
+It prints a concise summary, for example:
+
+```
+EURUSD Trend Breakout – Trade Summary
+==================================================
+Total trades: 120
+Win rate: 48.33 %
+Total profit (money): 354.20
+Total profit (R): 36.50
+Average R (winners): 1.35
+Average R (losers): -0.42
+Max consecutive losses: 3
+Max equity drawdown: -6.20 %
+```
+
+Run the accompanying tests to validate the analytics helpers:
+
+```
+./scripts/run_tests.sh
+```
+
+or simply:
+
+```
+make test
+```
