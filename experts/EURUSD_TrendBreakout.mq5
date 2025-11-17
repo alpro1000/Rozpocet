@@ -52,6 +52,9 @@ input int     TradingEndHour           = 22;
 input bool    UseNewsFilter            = true;  // Changed default to true
 input int     NewsBlockMinutesBefore   = 30;
 input int     NewsBlockMinutesAfter    = 30;
+input string  NewsCalendarSource       = "file"; // "file" or "mt5"
+input string  NewsCalendarFilePath     = "news_calendar.csv"; // CSV/JSON stored in MQL5/Files
+input int     NewsCalendarRefreshMinutes = 60;   // Reload cadence for on-disk/MT5 calendar
 
 //--- trade helper
 CTrade        trade;
@@ -116,6 +119,19 @@ double      g_weeklyStartEquity = 0.0;
 double      g_dailyLoss = 0.0;
 double      g_weeklyLoss = 0.0;
 
+//--- news calendar state
+struct NewsEvent
+{
+   datetime time;
+   string   currency;
+   string   title;
+   string   impact; // low/medium/high
+};
+
+NewsEvent   g_newsEvents[];
+datetime    g_newsLastLoaded = 0;
+string      g_lastNewsBlockReason = "";
+
 //--- logging
 string       g_logFileName = "eurusd_trades_log.csv";
 bool         g_logHeaderWritten = false;
@@ -138,6 +154,14 @@ void     ResetRiskLimitsIfNeeded();
 bool     IsTradingAllowedNow();
 double   GetPipSize();
 bool     IsHighImpactNewsNow(const string symbol,const datetime checkTime);
+bool     LoadNewsCalendar(const datetime now);
+bool     LoadNewsFromFile(const string filename);
+bool     LoadNewsFromMt5(const string symbol);
+bool     ParseJsonCalendar(const string content);
+string   ExtractJsonValue(const string text, const string key);
+bool     SymbolMatchesEvent(const string symbol, const string currency);
+bool     IsHighImpactImpact(const string impact);
+string   Trim(const string text);
 void     UpdateDailyWeeklyLoss(double profit);
 void     EnsureLogHeader();
 void     LogCompletedTrade(ulong positionTicket);
@@ -856,59 +880,337 @@ double GetPipSize()
    return(point);
 }
 
+// Lightweight calendar-driven high impact filter with time-window fallback
 bool IsHighImpactNewsNow(const string symbol,const datetime checkTime)
 {
-   // Simple time-based news filter for USD high-impact events
-   // Adjust hours based on your broker's server time!
-   // This assumes GMT+2/GMT+3 server time (common for EU brokers)
+   g_lastNewsBlockReason = "";
 
+   bool calendarLoaded = LoadNewsCalendar(checkTime);
+
+   if(calendarLoaded)
+   {
+      int beforeWindow = NewsBlockMinutesBefore * 60;
+      int afterWindow  = NewsBlockMinutesAfter * 60;
+
+      for(int i=0;i<ArraySize(g_newsEvents);i++)
+      {
+         NewsEvent ev = g_newsEvents[i];
+         if(!SymbolMatchesEvent(symbol, ev.currency))
+            continue;
+
+         if(checkTime >= ev.time - beforeWindow && checkTime <= ev.time + afterWindow)
+         {
+            if(IsHighImpactImpact(ev.impact))
+            {
+               g_lastNewsBlockReason = StringFormat(
+                  "NEWS FILTER: %s [%s %s, impact=%s] within %d/%d min buffer", 
+                  ev.title,
+                  ev.currency,
+                  TimeToString(ev.time, TIME_DATE|TIME_MINUTES),
+                  ev.impact,
+                  NewsBlockMinutesBefore,
+                  NewsBlockMinutesAfter);
+               Print(g_lastNewsBlockReason);
+               return true;
+            }
+         }
+      }
+   }
+
+   // Safety-net time windows in case the calendar cannot be loaded
    MqlDateTime dt;
    TimeToStruct(checkTime, dt);
 
-   // Block standard USD news hours
    // 14:30 server time = 12:30 UTC (NFP, Retail Sales, CPI, etc.)
    if(dt.hour == 14 && dt.min >= 15 && dt.min <= 45)
    {
-      Print("NEWS FILTER: Blocking 14:30 news window");
+      Print("NEWS FILTER (fallback): Blocking 14:30 news window");
       return true;
    }
 
    // 16:00 server time = 14:00 UTC (FOMC decisions, etc.)
    if(dt.hour == 16 && dt.min >= 0 && dt.min <= 30)
    {
-      Print("NEWS FILTER: Blocking 16:00 news window");
+      Print("NEWS FILTER (fallback): Blocking 16:00 news window");
       return true;
    }
 
    // 16:30 server time = 14:30 UTC (Crude Oil inventories, etc.)
    if(dt.hour == 16 && dt.min >= 15 && dt.min <= 45)
    {
-      Print("NEWS FILTER: Blocking 16:30 news window");
+      Print("NEWS FILTER (fallback): Blocking 16:30 news window");
       return true;
    }
 
    // ECB press conference (typically Thursday 14:30 server time)
    if(dt.hour == 14 && dt.day_of_week == 4 && dt.min >= 15 && dt.min <= 45)
    {
-      Print("NEWS FILTER: Blocking ECB press conference");
+      Print("NEWS FILTER (fallback): Blocking ECB press conference");
       return true;
    }
 
    // Friday evening - weekend gap risk
    if(dt.day_of_week == 5 && dt.hour >= 23)
    {
-      Print("NEWS FILTER: Blocking Friday evening (weekend gap risk)");
+      Print("NEWS FILTER (fallback): Blocking Friday evening (weekend gap risk)");
       return true;
    }
 
    // Monday early morning - weekend gap processing
    if(dt.day_of_week == 1 && dt.hour <= 1)
    {
-      Print("NEWS FILTER: Blocking Monday early morning (weekend gap)");
+      Print("NEWS FILTER (fallback): Blocking Monday early morning (weekend gap)");
       return true;
    }
 
    return false;
+}
+
+bool LoadNewsCalendar(const datetime now)
+{
+   // Avoid reloading on every tick
+   if(g_newsLastLoaded != 0 && (now - g_newsLastLoaded) < NewsCalendarRefreshMinutes * 60)
+      return(ArraySize(g_newsEvents) > 0);
+
+   ArrayResize(g_newsEvents, 0);
+   g_newsLastLoaded = now;
+
+   if(StringCompare(StringToLower(NewsCalendarSource), "file") == 0)
+   {
+      if(LoadNewsFromFile(NewsCalendarFilePath))
+         return(true);
+   }
+   else if(StringCompare(StringToLower(NewsCalendarSource), "mt5") == 0)
+   {
+      if(LoadNewsFromMt5(_Symbol))
+         return(true);
+   }
+
+   Print("NEWS FILTER: Failed to load calendar from source '", NewsCalendarSource, "'. Using fallback schedule only.");
+   return(false);
+}
+
+bool LoadNewsFromFile(const string filename)
+{
+   int handle = FileOpen(filename, FILE_READ|FILE_ANSI|FILE_TXT);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("NEWS FILTER: Unable to open calendar file ", filename);
+      return(false);
+   }
+
+   string content = "";
+   string firstNonEmpty = "";
+
+   while(!FileIsEnding(handle))
+   {
+      string line = FileReadString(handle);
+      content += (StringLen(content) > 0 ? "\n" : "") + line;
+
+      string trimmed = Trim(line);
+      if(StringLen(trimmed) > 0 && StringLen(firstNonEmpty) == 0)
+         firstNonEmpty = trimmed;
+   }
+
+   FileClose(handle);
+
+   if(StringLen(firstNonEmpty) > 0)
+   {
+      ushort firstChar = StringGetCharacter(firstNonEmpty, 0);
+      if(firstChar == '[' || firstChar == '{')
+         return(ParseJsonCalendar(content));
+   }
+
+   string lines[];
+   int totalLines = StringSplit(content, "\n", lines);
+   for(int i=0;i<totalLines;i++)
+   {
+      string line = Trim(lines[i]);
+      if(StringLen(line) == 0 || StringGetCharacter(line, 0) == '#')
+         continue;
+
+      string parts[];
+      int count = StringSplit(line, ';', parts);
+      if(count < 4)
+         count = StringSplit(line, ',', parts);
+
+      if(count < 4)
+         continue;
+
+      datetime eventTime = (datetime)StringToTime(Trim(parts[0]));
+      string currency = Trim(parts[1]);
+      string impact = StringToLower(Trim(parts[2]));
+      string title = Trim(parts[3]);
+
+      if(eventTime <= 0)
+         continue;
+
+      int newIndex = ArraySize(g_newsEvents);
+      ArrayResize(g_newsEvents, newIndex + 1);
+      g_newsEvents[newIndex].time = eventTime;
+      g_newsEvents[newIndex].currency = currency;
+      g_newsEvents[newIndex].impact = impact;
+      g_newsEvents[newIndex].title = title;
+   }
+
+   return(ArraySize(g_newsEvents) > 0);
+}
+
+bool LoadNewsFromMt5(const string symbol)
+{
+   string base = StringSubstr(symbol, 0, 3);
+   string quote = StringSubstr(symbol, 3, 3);
+
+   // Pull events in the near future for both legs of the pair
+   datetime now = TimeCurrent();
+   datetime from = now - NewsBlockMinutesBefore * 60;
+   datetime horizon = now + 3 * 24 * 3600; // 3 days ahead
+
+   MqlCalendarValue values[];
+   int baseCount = CalendarValueHistory(base, from, horizon, values);
+
+   MqlCalendarValue quoteValues[];
+   int quoteCount = CalendarValueHistory(quote, from, horizon, quoteValues);
+
+   if(baseCount <= 0 && quoteCount <= 0)
+      return(false);
+
+   int total = 0;
+   if(baseCount > 0)
+      total += baseCount;
+   if(quoteCount > 0)
+      total += quoteCount;
+
+   ArrayResize(g_newsEvents, total);
+   int idx = 0;
+
+   if(baseCount > 0)
+   {
+      for(int i=0;i<baseCount && idx < total;i++, idx++)
+      {
+         g_newsEvents[idx].time = values[i].time;
+         g_newsEvents[idx].currency = values[i].country;
+         g_newsEvents[idx].title = values[i].event;
+         g_newsEvents[idx].impact = (values[i].importance == CALENDAR_IMPORTANCE_HIGH ? "high" :
+                                    values[i].importance == CALENDAR_IMPORTANCE_MEDIUM ? "medium" : "low");
+      }
+   }
+
+   if(quoteCount > 0)
+   {
+      for(int i=0;i<quoteCount && idx < total;i++, idx++)
+      {
+         g_newsEvents[idx].time = quoteValues[i].time;
+         g_newsEvents[idx].currency = quoteValues[i].country;
+         g_newsEvents[idx].title = quoteValues[i].event;
+         g_newsEvents[idx].impact = (quoteValues[i].importance == CALENDAR_IMPORTANCE_HIGH ? "high" :
+                                    quoteValues[i].importance == CALENDAR_IMPORTANCE_MEDIUM ? "medium" : "low");
+      }
+   }
+
+   return(ArraySize(g_newsEvents) > 0);
+}
+
+bool ParseJsonCalendar(const string content)
+{
+   string normalized = content;
+   normalized = StringReplace(normalized, "\r", "");
+
+   int searchStart = 0;
+   while(true)
+   {
+      int objStart = StringFind(normalized, "{", searchStart);
+      if(objStart < 0)
+         break;
+
+      int objEnd = StringFind(normalized, "}", objStart);
+      if(objEnd < 0)
+         break;
+
+      string obj = StringSubstr(normalized, objStart, objEnd - objStart + 1);
+
+      string timeStr = Trim(ExtractJsonValue(obj, "time"));
+      if(StringLen(timeStr) == 0)
+         timeStr = Trim(ExtractJsonValue(obj, "datetime"));
+
+      string currency = Trim(ExtractJsonValue(obj, "currency"));
+      if(StringLen(currency) == 0)
+         currency = Trim(ExtractJsonValue(obj, "country"));
+
+      string impact = StringToLower(Trim(ExtractJsonValue(obj, "impact")));
+      if(StringLen(impact) == 0)
+         impact = StringToLower(Trim(ExtractJsonValue(obj, "importance")));
+
+      string title = Trim(ExtractJsonValue(obj, "title"));
+      if(StringLen(title) == 0)
+         title = Trim(ExtractJsonValue(obj, "event"));
+
+      datetime eventTime = (datetime)StringToTime(timeStr);
+
+      if(eventTime > 0)
+      {
+         int newIndex = ArraySize(g_newsEvents);
+         ArrayResize(g_newsEvents, newIndex + 1);
+         g_newsEvents[newIndex].time = eventTime;
+         g_newsEvents[newIndex].currency = currency;
+         g_newsEvents[newIndex].impact = impact;
+         g_newsEvents[newIndex].title = title;
+      }
+
+      searchStart = objEnd + 1;
+   }
+
+   return(ArraySize(g_newsEvents) > 0);
+}
+
+string ExtractJsonValue(const string text, const string key)
+{
+   string pattern = "\"" + key + "\"";
+   int start = StringFind(text, pattern);
+   if(start < 0)
+      return("");
+
+   start = StringFind(text, ":", start);
+   if(start < 0)
+      return("");
+
+   start = StringFind(text, "\"", start);
+   if(start < 0)
+      return("");
+   start++;
+
+   int end = StringFind(text, "\"", start);
+   if(end < 0)
+      return("");
+
+   return(StringSubstr(text, start, end - start));
+}
+
+bool SymbolMatchesEvent(const string symbol, const string currency)
+{
+   if(StringLen(currency) == 0)
+      return(false);
+
+   string base = StringSubstr(symbol, 0, 3);
+   string quote = StringSubstr(symbol, 3, 3);
+
+   string curUpper = StringUpper(currency);
+
+   return(curUpper == StringUpper(base) || curUpper == StringUpper(quote) || curUpper == "ALL");
+}
+
+bool IsHighImpactImpact(const string impact)
+{
+   string val = StringToLower(impact);
+   return(StringFind(val, "high") == 0 || val == "3" || val == "h");
+}
+
+string Trim(const string text)
+{
+   string tmp = text;
+   tmp = StringTrimLeft(tmp);
+   tmp = StringTrimRight(tmp);
+   return(tmp);
 }
 
 void UpdateDailyWeeklyLoss(double profit)

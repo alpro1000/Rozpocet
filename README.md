@@ -7,7 +7,7 @@ This repository contains a complete prototype of a discretionary trend breakout 
 ## 🆕 Latest Updates (v1.1.0 - 2025-11-15)
 
 ### Critical Improvements
-- ✅ **News filter implemented** - Protects against high-impact news events
+- ✅ **News filter implemented** - Protects against high-impact news events (now calendar-driven with MT5/file sources)
 - ✅ **Weekly limits bug fixed** - Now works correctly regardless of EA start day
 - ✅ **Optional fixed TP** - Can now let winners run (recommended: `UseFixedTP = false`)
 - ✅ **Break-even at 1.5R** - Less aggressive, fewer premature exits
@@ -43,7 +43,6 @@ It prints a concise summary, for example:
 
 ```
 EURUSD Trend Breakout – Trade Summary
-==================================================
 Total trades: 120
 Win rate: 48.33 %
 Total profit (money): 354.20
