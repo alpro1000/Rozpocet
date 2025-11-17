@@ -7,7 +7,7 @@ This repository contains a complete prototype of a discretionary trend breakout 
 ## 🆕 Latest Updates (v1.1.0 - 2025-11-15)
 
 ### Critical Improvements
-- ✅ **News filter implemented** - Protects against high-impact news events
+- ✅ **News filter implemented** - Protects against high-impact news events (now calendar-driven with MT5/file sources)
 - ✅ **Weekly limits bug fixed** - Now works correctly regardless of EA start day
 - ✅ **Optional fixed TP** - Can now let winners run (recommended: `UseFixedTP = false`)
 - ✅ **Break-even at 1.5R** - Less aggressive, fewer premature exits
@@ -30,3 +30,13 @@ See [IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md) for detailed roadmap and fut
 5. **Trade Handling** – Break-even promotion at 1R, trailing stop on local swings, and comprehensive CSV logging for downstream analytics.
 
 Refer to each source file for detailed implementation notes.
+
+## News calendar input
+
+- The Expert Advisor can now load high-impact events from either the MT5 Economic Calendar or a CSV/JSON file located under `MQL5/Files`.
+- Configure the source via inputs:
+  - `NewsCalendarSource` – `"file"` (default) or `"mt5"`
+  - `NewsCalendarFilePath` – filename for on-disk calendars (e.g., `news_calendar.csv`)
+  - `NewsBlockMinutesBefore/After` – symmetric buffers applied around each event
+- File format (CSV example): `datetime,currency,impact,title` where `impact` accepts `high|medium|low`. See `experts/news_calendar_sample.csv` for a template.
+- When an event blocks trading, the EA logs the event name, currency, time, and configured buffer for clearer backtests.
