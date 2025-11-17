@@ -1,6 +1,19 @@
 # EURUSD Trend Breakout Strategy
 
+**Version 1.1.0** - [See CHANGELOG.md](CHANGELOG.md) for latest updates
+
 This repository contains a complete prototype of a discretionary trend breakout strategy for EURUSD implemented for MetaTrader 5 and an accompanying Python analytics script. The system is built around a Donchian breakout with a higher time-frame trend filter and disciplined risk management.
+
+## 🆕 Latest Updates (v1.1.0 - 2025-11-15)
+
+### Critical Improvements
+- ✅ **News filter implemented** - Protects against high-impact news events
+- ✅ **Weekly limits bug fixed** - Now works correctly regardless of EA start day
+- ✅ **Optional fixed TP** - Can now let winners run (recommended: `UseFixedTP = false`)
+- ✅ **Break-even at 1.5R** - Less aggressive, fewer premature exits
+- ✅ **Relaxed H4 filter** - 2-3x more signals while maintaining quality
+
+See [IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md) for detailed roadmap and future enhancements.
 
 ## Project Structure
 

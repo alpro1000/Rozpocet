@@ -23,6 +23,7 @@ input double  MaxDailyLossPercent      = 2.0;
 input double  MaxWeeklyLossPercent     = 5.0;
 
 input int     H4_EMA_Period            = 200;
+input int     H4_EMA_MinRisingBars     = 3;    // Relaxed from 4 (was hardcoded)
 input int     H1_EMA_Fast_Period       = 50;
 input int     Donchian_Period          = 20;
 
@@ -36,17 +37,19 @@ input double  BreakBufferPips          = 5.0;
 input double  EntryOffsetPips          = 1.0;
 input double  SL_ATR_Multiplier        = 1.5;
 input double  MinSLDistancePips        = 8.0;
+input bool    UseFixedTP               = false; // Use fixed TP or rely on trailing
 input double  RR_Multiplier            = 2.0;
-input double  Min_ATR_FilterPips       = 4.0;
+input double  Min_ATR_FilterPips       = 6.0;   // Increased from 4.0
 input int     MaxRetestBars            = 5;
 
 input double  BE_OffsetPips            = 1.0;
+input double  BE_ActivationMultiplier  = 1.5;  // Activate BE at 1.5R (was 1R)
 input double  TrailingBufferPips       = 2.0;
 
 input int     TradingStartHour         = 7;
 input int     TradingEndHour           = 22;
 
-input bool    UseNewsFilter            = false;
+input bool    UseNewsFilter            = true;  // Changed default to true
 input int     NewsBlockMinutesBefore   = 30;
 input int     NewsBlockMinutesAfter    = 30;
 
@@ -252,7 +255,9 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,const MqlTradeRequest &
                   g_trade.initialStopLoss = g_pending.stopLoss;
                   g_trade.initialTakeProfit = g_pending.takeProfit;
                   double riskDistance = MathAbs(g_trade.entryPrice - g_trade.stopLoss);
-                  g_trade.level1R = (g_pending.direction == DIR_LONG ? g_trade.entryPrice + riskDistance : g_trade.entryPrice - riskDistance);
+                  g_trade.level1R = (g_pending.direction == DIR_LONG ?
+                                    g_trade.entryPrice + BE_ActivationMultiplier * riskDistance :
+                                    g_trade.entryPrice - BE_ActivationMultiplier * riskDistance);
                   g_trade.direction = g_pending.direction;
                   g_trade.movedToBE = false;
                   g_trade.barsSinceBE = 0;
@@ -342,9 +347,9 @@ TrendRegime CalculateTrendRegime()
          fallingCount++;
    }
 
-   if(closePrice > ema[0] && risingCount >= 4 && macdMain[0] > macdSignal[0])
+   if(closePrice > ema[0] && risingCount >= H4_EMA_MinRisingBars && macdMain[0] > macdSignal[0])
       return(TREND_LONG);
-   if(closePrice < ema[0] && fallingCount >= 4 && macdMain[0] < macdSignal[0])
+   if(closePrice < ema[0] && fallingCount >= H4_EMA_MinRisingBars && macdMain[0] < macdSignal[0])
       return(TREND_SHORT);
 
    return(TREND_FLAT);
@@ -610,12 +615,17 @@ bool PlaceLimitOrder(TradeDirection direction,double entry,double sl,double tp,d
    req.volume   = lot;
    req.price    = entry;
    req.sl       = sl;
-   req.tp       = tp;
-   req.deviation= 10;
+   req.tp       = (UseFixedTP ? tp : 0);  // Use TP only if enabled
+   req.deviation= 30;  // Increased from 10 (now 3 pips for better execution)
    req.magic    = trade.GetExpertMagicNumber();
    req.type     = (direction == DIR_LONG ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT);
    req.type_filling = ORDER_FILLING_RETURN;
    req.type_time    = ORDER_TIME_GTC;
+
+   if(UseFixedTP)
+      Print("Using fixed TP at ", tp);
+   else
+      Print("No fixed TP - relying on BE + trailing stop + regime change");
 
    if(!OrderSend(req,res))
    {
@@ -802,21 +812,28 @@ void ResetRiskLimitsIfNeeded()
    MqlDateTime nowStruct;
    TimeToStruct(now, nowStruct);
 
-   if(nowStruct.day != g_dailyDate.day || nowStruct.mon != g_dailyDate.mon || nowStruct.year != g_dailyDate.year)
+   // Daily reset
+   if(nowStruct.day != g_dailyDate.day ||
+      nowStruct.mon != g_dailyDate.mon ||
+      nowStruct.year != g_dailyDate.year)
    {
       g_dailyDate = nowStruct;
       g_dailyStartEquity = AccountInfoDouble(ACCOUNT_EQUITY);
       g_dailyLoss = 0.0;
-      Print("Daily limits reset");
+      Print("Daily limits reset. New equity: ", g_dailyStartEquity);
    }
 
-   int currentWeekday = nowStruct.day_of_week;
-   if((currentWeekday == 1 && nowStruct.day != g_weeklyDate.day) || nowStruct.year != g_weeklyDate.year)
+   // Weekly reset - calculate week number properly
+   // This fixes the bug where weekly reset only worked on Mondays
+   int currentWeek = (nowStruct.day_of_year - 1) / 7;
+   int savedWeek = (g_weeklyDate.day_of_year - 1) / 7;
+
+   if(currentWeek != savedWeek || nowStruct.year != g_weeklyDate.year)
    {
       g_weeklyDate = nowStruct;
       g_weeklyStartEquity = AccountInfoDouble(ACCOUNT_EQUITY);
       g_weeklyLoss = 0.0;
-      Print("Weekly limits reset");
+      Print("Weekly limits reset. Week ", currentWeek, ", New equity: ", g_weeklyStartEquity);
    }
 }
 
@@ -841,7 +858,57 @@ double GetPipSize()
 
 bool IsHighImpactNewsNow(const string symbol,const datetime checkTime)
 {
-   return(false);
+   // Simple time-based news filter for USD high-impact events
+   // Adjust hours based on your broker's server time!
+   // This assumes GMT+2/GMT+3 server time (common for EU brokers)
+
+   MqlDateTime dt;
+   TimeToStruct(checkTime, dt);
+
+   // Block standard USD news hours
+   // 14:30 server time = 12:30 UTC (NFP, Retail Sales, CPI, etc.)
+   if(dt.hour == 14 && dt.min >= 15 && dt.min <= 45)
+   {
+      Print("NEWS FILTER: Blocking 14:30 news window");
+      return true;
+   }
+
+   // 16:00 server time = 14:00 UTC (FOMC decisions, etc.)
+   if(dt.hour == 16 && dt.min >= 0 && dt.min <= 30)
+   {
+      Print("NEWS FILTER: Blocking 16:00 news window");
+      return true;
+   }
+
+   // 16:30 server time = 14:30 UTC (Crude Oil inventories, etc.)
+   if(dt.hour == 16 && dt.min >= 15 && dt.min <= 45)
+   {
+      Print("NEWS FILTER: Blocking 16:30 news window");
+      return true;
+   }
+
+   // ECB press conference (typically Thursday 14:30 server time)
+   if(dt.hour == 14 && dt.day_of_week == 4 && dt.min >= 15 && dt.min <= 45)
+   {
+      Print("NEWS FILTER: Blocking ECB press conference");
+      return true;
+   }
+
+   // Friday evening - weekend gap risk
+   if(dt.day_of_week == 5 && dt.hour >= 23)
+   {
+      Print("NEWS FILTER: Blocking Friday evening (weekend gap risk)");
+      return true;
+   }
+
+   // Monday early morning - weekend gap processing
+   if(dt.day_of_week == 1 && dt.hour <= 1)
+   {
+      Print("NEWS FILTER: Blocking Monday early morning (weekend gap)");
+      return true;
+   }
+
+   return false;
 }
 
 void UpdateDailyWeeklyLoss(double profit)
@@ -978,7 +1045,9 @@ void SyncPositionState()
       if(!g_trade.movedToBE)
       {
          double risk = MathAbs(g_trade.entryPrice - g_trade.stopLoss);
-         g_trade.level1R = (g_trade.direction == DIR_LONG ? g_trade.entryPrice + risk : g_trade.entryPrice - risk);
+         g_trade.level1R = (g_trade.direction == DIR_LONG ?
+                           g_trade.entryPrice + BE_ActivationMultiplier * risk :
+                           g_trade.entryPrice - BE_ActivationMultiplier * risk);
       }
       g_trade.entryTime = (datetime)PositionGetInteger(POSITION_TIME);
       if(g_trade.riskAmount <= 0.0)
