@@ -165,10 +165,16 @@ void CheckEntrySignals()
    if(!GetDonchianChannel(DonchianEntryPeriod,1,entryHigh,entryLow))
       return;
 
+   double closeArr[1];
+   if(CopyClose(_Symbol,PERIOD_D1,1,1,closeArr) != 1)
+      return;
+
+   double prevClose = closeArr[0];
+
    int direction = 0;
-   if(trendDir == 1 && (TradeMode == TM_BOTH || TradeMode == TM_LONGS_ONLY) && Close[1] > entryHigh)
+   if(trendDir == 1 && (TradeMode == TM_BOTH || TradeMode == TM_LONGS_ONLY) && prevClose > entryHigh)
       direction = 1;
-   else if(trendDir == -1 && (TradeMode == TM_BOTH || TradeMode == TM_SHORTS_ONLY) && Close[1] < entryLow)
+   else if(trendDir == -1 && (TradeMode == TM_BOTH || TradeMode == TM_SHORTS_ONLY) && prevClose < entryLow)
       direction = -1;
 
    if(direction == 0)
@@ -204,10 +210,16 @@ void CheckExitSignals()
    if(!GetDonchianChannel(DonchianExitPeriod,1,exitHigh,exitLow))
       return;
 
+   double closeArr[1];
+   if(CopyClose(_Symbol,PERIOD_D1,1,1,closeArr) != 1)
+      return;
+
+   double prevClose = closeArr[0];
+
    bool shouldClose = false;
-   if(g_trade.direction == 1 && Close[1] < exitLow)
+   if(g_trade.direction == 1 && prevClose < exitLow)
       shouldClose = true;
-   else if(g_trade.direction == -1 && Close[1] > exitHigh)
+   else if(g_trade.direction == -1 && prevClose > exitHigh)
       shouldClose = true;
 
    if(!shouldClose)
@@ -245,9 +257,15 @@ bool CalculateTrendDirection(int &trendDir,double &atr)
       return(false);
    atr = atrArr[0];
 
-   if(Close[1] > ema[0] && ema[0] > ema[1] && ema[1] > ema[2])
+   double closeArr[1];
+   if(CopyClose(_Symbol,PERIOD_D1,1,1,closeArr) != 1)
+      return(false);
+
+   double prevClose = closeArr[0];
+
+   if(prevClose > ema[0] && ema[0] > ema[1] && ema[1] > ema[2])
       trendDir = 1;
-   else if(Close[1] < ema[0] && ema[0] < ema[1] && ema[1] < ema[2])
+   else if(prevClose < ema[0] && ema[0] < ema[1] && ema[1] < ema[2])
       trendDir = -1;
 
    return(trendDir != 0 && atr > 0.0);
