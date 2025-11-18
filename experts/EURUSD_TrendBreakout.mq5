@@ -372,9 +372,9 @@ TrendRegime CalculateTrendRegime()
    int fallingCount = 0;
    for(int i=1;i<5;i++)
    {
-      if(ema[i-1] >= ema[i])
+      if(ema[i-1] > ema[i])
          risingCount++;
-      if(ema[i-1] <= ema[i])
+      else if(ema[i-1] < ema[i])
          fallingCount++;
    }
 
