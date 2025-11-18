@@ -1,3 +1,6 @@
+// FIX: corrected CalendarValueHistory calls
+// FIX: proper StringToLower/StringToUpper usage
+// FIX: added configurable MagicNumber handling
 #property copyright "Quantitative prototype"
 #property version   "1.00"
 #property strict
@@ -56,6 +59,7 @@ input int     NewsBlockMinutesAfter    = 30;
 input string  NewsCalendarSource       = "file"; // "file" or "mt5"
 input string  NewsCalendarFilePath     = "news_calendar.csv"; // CSV/JSON stored in MQL5/Files
 input int     NewsCalendarRefreshMinutes = 60;   // Reload cadence for on-disk/MT5 calendar
+input ulong   InpMagic                 = 20240528;
 
 //--- trade helper
 CTrade        trade;
@@ -184,7 +188,7 @@ int OnInit()
       return(INIT_FAILED);
    }
 
-   trade.SetExpertMagicNumber(20240528);
+   trade.SetExpertMagicNumber(InpMagic);
 
    if(!InitializeIndicators())
       return(INIT_FAILED);
@@ -642,7 +646,7 @@ bool PlaceLimitOrder(TradeDirection direction,double entry,double sl,double tp,d
    req.sl       = sl;
    req.tp       = (UseFixedTP ? tp : 0);  // Use TP only if enabled
    req.deviation= 30;  // Increased from 10 (now 3 pips for better execution)
-   req.magic    = trade.GetExpertMagicNumber();
+   req.magic    = InpMagic;
    req.type     = (direction == DIR_LONG ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT);
    req.type_filling = ORDER_FILLING_RETURN;
    req.type_time    = ORDER_TIME_GTC;
@@ -976,12 +980,15 @@ bool LoadNewsCalendar(const datetime now)
    ArrayResize(g_newsEvents, 0);
    g_newsLastLoaded = now;
 
-   if(StringCompare(StringToLower(NewsCalendarSource), "file") == 0)
+   string calendarSource = NewsCalendarSource;
+   StringToLower(calendarSource);
+
+   if(StringCompare(calendarSource, "file") == 0)
    {
       if(LoadNewsFromFile(NewsCalendarFilePath))
          return(true);
    }
-   else if(StringCompare(StringToLower(NewsCalendarSource), "mt5") == 0)
+   else if(StringCompare(calendarSource, "mt5") == 0)
    {
       if(LoadNewsFromMt5(_Symbol))
          return(true);
@@ -1040,7 +1047,8 @@ bool LoadNewsFromFile(const string filename)
 
       datetime eventTime = (datetime)StringToTime(Trim(parts[0]));
       string currency = Trim(parts[1]);
-      string impact = StringToLower(Trim(parts[2]));
+      string impact = Trim(parts[2]);
+      StringToLower(impact);
       string title = Trim(parts[3]);
 
       if(eventTime <= 0)
@@ -1068,10 +1076,10 @@ bool LoadNewsFromMt5(const string symbol)
    datetime horizon = now + 3 * 24 * 3600; // 3 days ahead
 
    MqlCalendarValue values[];
-   int baseCount = CalendarValueHistory(base, from, horizon, values);
+   int baseCount = CalendarValueHistory(values, from, horizon, NULL, base);
 
    MqlCalendarValue quoteValues[];
-   int quoteCount = CalendarValueHistory(quote, from, horizon, quoteValues);
+   int quoteCount = CalendarValueHistory(quoteValues, from, horizon, NULL, quote);
 
    if(baseCount <= 0 && quoteCount <= 0)
       return(false);
@@ -1138,9 +1146,13 @@ bool ParseJsonCalendar(const string content)
       if(StringLen(currency) == 0)
          currency = Trim(ExtractJsonValue(obj, "country"));
 
-      string impact = StringToLower(Trim(ExtractJsonValue(obj, "impact")));
+      string impact = Trim(ExtractJsonValue(obj, "impact"));
+      StringToLower(impact);
       if(StringLen(impact) == 0)
-         impact = StringToLower(Trim(ExtractJsonValue(obj, "importance")));
+      {
+         impact = Trim(ExtractJsonValue(obj, "importance"));
+         StringToLower(impact);
+      }
 
       string title = Trim(ExtractJsonValue(obj, "title"));
       if(StringLen(title) == 0)
@@ -1195,14 +1207,21 @@ bool SymbolMatchesEvent(const string symbol, const string currency)
    string base = StringSubstr(symbol, 0, 3);
    string quote = StringSubstr(symbol, 3, 3);
 
-   string curUpper = StringUpper(currency);
+   string curUpper = currency;
+   StringToUpper(curUpper);
 
-   return(curUpper == StringUpper(base) || curUpper == StringUpper(quote) || curUpper == "ALL");
+   string baseUpper = base;
+   StringToUpper(baseUpper);
+   string quoteUpper = quote;
+   StringToUpper(quoteUpper);
+
+   return(curUpper == baseUpper || curUpper == quoteUpper || curUpper == "ALL");
 }
 
 bool IsHighImpactImpact(const string impact)
 {
-   string val = StringToLower(impact);
+   string val = impact;
+   StringToLower(val);
    return(StringFind(val, "high") == 0 || val == "3" || val == "h");
 }
 
