@@ -158,6 +158,7 @@ void     UpdatePositionManagementOnNewBar();
 void     ResetRiskLimitsIfNeeded();
 bool     IsTradingAllowedNow();
 double   GetPipSize();
+bool     IsCalendarServiceAvailable();
 bool     IsHighImpactNewsNow(const string symbol,const datetime checkTime);
 bool     LoadNewsCalendar(const datetime now);
 bool     LoadNewsFromFile(const string filename);
@@ -971,6 +972,15 @@ bool IsHighImpactNewsNow(const string symbol,const datetime checkTime)
    return false;
 }
 
+bool IsCalendarServiceAvailable()
+{
+   // Guard against terminals without an active economic calendar service to avoid runtime errors
+   long calendarEnabled = (long)TerminalInfoInteger(TERMINAL_ECONOMIC_CALENDAR);
+   long communityConnected = (long)TerminalInfoInteger(TERMINAL_COMMUNITY_ACCOUNT);
+
+   return(calendarEnabled == 1 && communityConnected == 1);
+}
+
 bool LoadNewsCalendar(const datetime now)
 {
    // Avoid reloading on every tick
@@ -990,6 +1000,12 @@ bool LoadNewsCalendar(const datetime now)
    }
    else if(StringCompare(calendarSource, "mt5") == 0)
    {
+      if(!IsCalendarServiceAvailable())
+      {
+         Print("NEWS FILTER: MT5 calendar unavailable (not connected to Economic Calendar service). Falling back to schedule-only filter.");
+         return(false);
+      }
+
       if(LoadNewsFromMt5(_Symbol))
          return(true);
    }
@@ -1076,13 +1092,21 @@ bool LoadNewsFromMt5(const string symbol)
    datetime horizon = now + 3 * 24 * 3600; // 3 days ahead
 
    MqlCalendarValue values[];
+   ResetLastError();
    int baseCount = CalendarValueHistory(values, from, horizon, NULL, base);
+   int baseErr = _LastError;
 
    MqlCalendarValue quoteValues[];
+   ResetLastError();
    int quoteCount = CalendarValueHistory(quoteValues, from, horizon, NULL, quote);
+   int quoteErr = _LastError;
 
    if(baseCount <= 0 && quoteCount <= 0)
+   {
+      if(baseErr != 0 || quoteErr != 0)
+         Print("NEWS FILTER: CalendarValueHistory failed (baseErr=", baseErr, ", quoteErr=", quoteErr, ")");
       return(false);
+   }
 
    int total = 0;
    if(baseCount > 0)
