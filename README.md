@@ -56,11 +56,13 @@ Max equity drawdown: -6.20 %
 Run the accompanying tests to validate the analytics helpers:
 
 ```
+pip install -r requirements.txt
 ./scripts/run_tests.sh
 ```
 
 or simply:
 
 ```
+pip install -r requirements.txt
 make test
 ```
