@@ -3,6 +3,7 @@
 #property strict
 
 #include <Trade/Trade.mqh>
+#include <Calendar/Calendar.mqh>
 
 enum TrendRegime
 {
