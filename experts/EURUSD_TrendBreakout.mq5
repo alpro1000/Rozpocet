@@ -1,3 +1,6 @@
+// FIX: removed dependency on <Calendar/Calendar.mqh>
+// FIX: LoadNewsFromMt5 stubbed (MT5 calendar unavailable)
+// FIX: news filter now uses file-based calendar + fallback windows only
 // FIX: corrected CalendarValueHistory calls
 // FIX: proper StringToLower/StringToUpper usage
 // FIX: added configurable MagicNumber handling
@@ -6,7 +9,6 @@
 #property strict
 
 #include <Trade/Trade.mqh>
-#include <Calendar/Calendar.mqh>
 
 enum TrendRegime
 {
@@ -158,7 +160,6 @@ void     UpdatePositionManagementOnNewBar();
 void     ResetRiskLimitsIfNeeded();
 bool     IsTradingAllowedNow();
 double   GetPipSize();
-bool     IsCalendarServiceAvailable();
 bool     IsHighImpactNewsNow(const string symbol,const datetime checkTime);
 bool     LoadNewsCalendar(const datetime now);
 bool     LoadNewsFromFile(const string filename);
@@ -972,15 +973,6 @@ bool IsHighImpactNewsNow(const string symbol,const datetime checkTime)
    return false;
 }
 
-bool IsCalendarServiceAvailable()
-{
-   // Guard against terminals without an active economic calendar service to avoid runtime errors
-   long calendarEnabled = (long)TerminalInfoInteger(TERMINAL_ECONOMIC_CALENDAR);
-   long communityConnected = (long)TerminalInfoInteger(TERMINAL_COMMUNITY_ACCOUNT);
-
-   return(calendarEnabled == 1 && communityConnected == 1);
-}
-
 bool LoadNewsCalendar(const datetime now)
 {
    // Avoid reloading on every tick
@@ -1000,14 +992,9 @@ bool LoadNewsCalendar(const datetime now)
    }
    else if(StringCompare(calendarSource, "mt5") == 0)
    {
-      if(!IsCalendarServiceAvailable())
-      {
-         Print("NEWS FILTER: MT5 calendar unavailable (not connected to Economic Calendar service). Falling back to schedule-only filter.");
-         return(false);
-      }
-
-      if(LoadNewsFromMt5(_Symbol))
-         return(true);
+      Print("NEWS FILTER: MT5 economic calendar not available in this terminal build. Falling back to schedule-only filter.");
+      LoadNewsFromMt5(_Symbol);
+      return(false);
    }
 
    Print("NEWS FILTER: Failed to load calendar from source '", NewsCalendarSource, "'. Using fallback schedule only.");
@@ -1083,65 +1070,8 @@ bool LoadNewsFromFile(const string filename)
 
 bool LoadNewsFromMt5(const string symbol)
 {
-   string base = StringSubstr(symbol, 0, 3);
-   string quote = StringSubstr(symbol, 3, 3);
-
-   // Pull events in the near future for both legs of the pair
-   datetime now = TimeCurrent();
-   datetime from = now - NewsBlockMinutesBefore * 60;
-   datetime horizon = now + 3 * 24 * 3600; // 3 days ahead
-
-   MqlCalendarValue values[];
-   ResetLastError();
-   int baseCount = CalendarValueHistory(values, from, horizon, NULL, base);
-   int baseErr = _LastError;
-
-   MqlCalendarValue quoteValues[];
-   ResetLastError();
-   int quoteCount = CalendarValueHistory(quoteValues, from, horizon, NULL, quote);
-   int quoteErr = _LastError;
-
-   if(baseCount <= 0 && quoteCount <= 0)
-   {
-      if(baseErr != 0 || quoteErr != 0)
-         Print("NEWS FILTER: CalendarValueHistory failed (baseErr=", baseErr, ", quoteErr=", quoteErr, ")");
-      return(false);
-   }
-
-   int total = 0;
-   if(baseCount > 0)
-      total += baseCount;
-   if(quoteCount > 0)
-      total += quoteCount;
-
-   ArrayResize(g_newsEvents, total);
-   int idx = 0;
-
-   if(baseCount > 0)
-   {
-      for(int i=0;i<baseCount && idx < total;i++, idx++)
-      {
-         g_newsEvents[idx].time = values[i].time;
-         g_newsEvents[idx].currency = values[i].country;
-         g_newsEvents[idx].title = values[i].event;
-         g_newsEvents[idx].impact = (values[i].importance == CALENDAR_IMPORTANCE_HIGH ? "high" :
-                                    values[i].importance == CALENDAR_IMPORTANCE_MEDIUM ? "medium" : "low");
-      }
-   }
-
-   if(quoteCount > 0)
-   {
-      for(int i=0;i<quoteCount && idx < total;i++, idx++)
-      {
-         g_newsEvents[idx].time = quoteValues[i].time;
-         g_newsEvents[idx].currency = quoteValues[i].country;
-         g_newsEvents[idx].title = quoteValues[i].event;
-         g_newsEvents[idx].impact = (quoteValues[i].importance == CALENDAR_IMPORTANCE_HIGH ? "high" :
-                                    quoteValues[i].importance == CALENDAR_IMPORTANCE_MEDIUM ? "medium" : "low");
-      }
-   }
-
-   return(ArraySize(g_newsEvents) > 0);
+   Print("NEWS FILTER: MT5 economic calendar is not available in this terminal build. Using file/fallback only.");
+   return(false);
 }
 
 bool ParseJsonCalendar(const string content)
