@@ -485,8 +485,9 @@ void EvaluateLongBreakout(int shift)
    if(macdMain[0] < macdSignal[0])
       return;
 
-   double highest = iHigh(_Symbol, PERIOD_H1, shift);
-   for(int i=1;i<Donchian_Period;i++)
+   // Donchian high over previous bars (exclude current bar at index `shift`)
+   double highest = iHigh(_Symbol, PERIOD_H1, shift + 1);
+   for(int i=2; i<=Donchian_Period; i++)
    {
       double h = iHigh(_Symbol, PERIOD_H1, shift + i);
       if(h > highest)
@@ -497,7 +498,8 @@ void EvaluateLongBreakout(int shift)
    double breakLevel = highest;
    double breakPrice = breakLevel + BreakBufferPips * pipSize;
 
-   if(closePrice < breakPrice)
+   // Require close to be above the Donchian breakout level + buffer
+   if(closePrice <= breakPrice)
       return;
 
    double entryPrice = breakLevel + EntryOffsetPips * pipSize;
@@ -569,8 +571,9 @@ void EvaluateShortBreakout(int shift)
    if(macdMain[0] > macdSignal[0])
       return;
 
-   double lowest = iLow(_Symbol, PERIOD_H1, shift);
-   for(int i=1;i<Donchian_Period;i++)
+   // Donchian low over previous bars (exclude current bar at index `shift`)
+   double lowest = iLow(_Symbol, PERIOD_H1, shift + 1);
+   for(int i=2; i<=Donchian_Period; i++)
    {
       double l = iLow(_Symbol, PERIOD_H1, shift + i);
       if(l < lowest)
@@ -581,7 +584,8 @@ void EvaluateShortBreakout(int shift)
    double breakLevel = lowest;
    double breakPrice = breakLevel - BreakBufferPips * pipSize;
 
-   if(closePrice > breakPrice)
+   // Require close to be below the Donchian breakout level - buffer
+   if(closePrice >= breakPrice)
       return;
 
    double entryPrice = breakLevel - EntryOffsetPips * pipSize;
